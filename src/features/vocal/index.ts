@@ -1,0 +1,1 @@
+export { VocalPanel } from './VocalPanel';
