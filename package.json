@@ -1,11 +1,17 @@
 {
-  "name": "neron-console",
+  "name": "neron-web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
+<<<<<<< HEAD
+    "typecheck": "tsc -b",
     "build": "tsc -b && vite build",
+    "check": "npm run typecheck && npm run build",
+=======
+    "build": "tsc -b && vite build",
+>>>>>>> release/v0.0.1
     "preview": "vite preview"
   },
   "dependencies": {

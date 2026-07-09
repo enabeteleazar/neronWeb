@@ -1,27 +1,43 @@
 const API_URL = import.meta.env.VITE_NERON_API_URL ?? 'http://localhost:8010';
 const API_KEY = import.meta.env.VITE_NERON_API_KEY ?? '';
+const STT_URL = import.meta.env.VITE_NERON_STT_URL ?? 'http://localhost:8001';
 
-type ApiOptions = RequestInit & { auth?: boolean };
+type ApiOptions = RequestInit & { auth?: boolean; timeoutMs?: number };
 
-export async function neronFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
-  const headers = new Headers(options.headers);
-  headers.set('Content-Type', 'application/json');
+export async function neronFetch<T>(path: string, options: ApiOptions = {}, baseUrl: string = API_URL): Promise<T> {
+  const { timeoutMs = 15000, auth, ...init } = options;
+  const headers = new Headers(init.headers);
 
-  if (options.auth !== false && API_KEY) {
+  if (!(init.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
+  if (auth !== false && API_KEY) {
     headers.set('X-API-Key', API_KEY);
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
 
-  if (!response.ok) {
-    throw new Error(`Néron API error ${response.status}: ${await response.text()}`);
+  try {
+    const response = await fetch(`${baseUrl}${path}`, {
+      ...init,
+      headers,
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Néron API error ${response.status}: ${await response.text()}`);
+    }
+
+    return response.json() as Promise<T>;
+  } finally {
+    window.clearTimeout(timer);
   }
-
-  return response.json() as Promise<T>;
 }
+
+/* ------------------------------------------------------------------ */
+/* Types                                                                */
+/* ------------------------------------------------------------------ */
 
 export type NeronHealth = {
   status?: string;
@@ -29,8 +45,51 @@ export type NeronHealth = {
   service?: string;
 };
 
+export type AgentInfo = {
+  status: string;
+  [key: string]: unknown;
+};
+
+export type NeronStatus = {
+  agents?: Record<string, AgentInfo>;
+  [key: string]: unknown;
+};
+
+// Correspond à CoreResponse (POST /input/text, /input/audio)
+export type CoreResponse = {
+  response: string;
+  intent?: string;
+  agent?: string;
+  confidence?: string;
+  timestamp?: string;
+  execution_time_ms?: number;
+  model?: string;
+  error?: string;
+  transcription?: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type ChatMessage = {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  streaming: boolean;
+  timestamp: Date;
+  error?: boolean;
+};
+
+export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
+
+/* ------------------------------------------------------------------ */
+/* Endpoints Néron Core                                                 */
+/* ------------------------------------------------------------------ */
+
 export async function getHealth() {
-  return neronFetch<NeronHealth>('/health', { auth: false });
+  return neronFetch<NeronHealth>('/health', { auth: false, timeoutMs: 5000 });
+}
+
+export async function getStatus() {
+  return neronFetch<NeronStatus>('/status', { timeoutMs: 5000 });
 }
 
 export async function sendGoal(goal: string) {
@@ -38,4 +97,31 @@ export async function sendGoal(goal: string) {
     method: 'POST',
     body: JSON.stringify({ goal }),
   });
+}
+
+export async function sendText(message: string) {
+  return neronFetch<CoreResponse>('/input/text', {
+    method: 'POST',
+    body: JSON.stringify({ text: message }),
+    timeoutMs: 30000,
+  });
+}
+
+export async function sendAudio(blob: Blob) {
+  const form = new FormData();
+  form.append('audio', blob, 'input.webm');
+  return neronFetch<CoreResponse>('/input/audio', {
+    method: 'POST',
+    body: form,
+    timeoutMs: 120000,
+  });
+}
+
+// Transcription brute (STT), microservice séparé du Core
+export async function transcribeAudio(blob: Blob) {
+  return neronFetch<{ text?: string; error?: string }>(
+    '/transcribe',
+    { method: 'POST', headers: { 'content-type': blob.type }, body: blob, timeoutMs: 30000, auth: false },
+    STT_URL,
+  );
 }

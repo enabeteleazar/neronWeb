@@ -3,29 +3,40 @@ import { useMemo, useState } from 'react';
 import { CommandBar } from './components/CommandBar';
 import { FloatingWindow } from './components/FloatingWindow';
 import { NeronOrb, type OrbState } from './components/NeronOrb';
-import { DashboardPanel } from './features/DashboardPanel';
-import { GoalsPanel } from './features/GoalsPanel';
-import { HomelabPanel } from './features/HomelabPanel';
-import { MemoryPanel } from './features/MemoryPanel';
-import { VocalPanel } from './features/VocalPanel';
+import { ConversationPanel } from './features/conversation';
+import { HomelabPanel } from './features/homelab';
+import { MemoryPanel } from './features/memory';
+import { SelfModelPanel } from './features/selfmodel';
+import { SystemPanel } from './features/system';
+import { VocalPanel } from './features/vocal';
 
 type WindowId = 'conversation' | 'dashboard' | 'homelab' | 'vocal' | 'goals' | 'memory';
 
-type WindowConfig = {
-  id: WindowId;
-  title: string;
+type WindowRuntimeState = {
   x: number;
   y: number;
   width: number;
+  minimized: boolean;
+  pinned: boolean;
+  z: number;
 };
 
-const windowConfigs: Record<WindowId, WindowConfig> = {
-  conversation: { id: 'conversation', title: 'Conversation', x: 270, y: 110, width: 430 },
-  dashboard: { id: 'dashboard', title: 'Système', x: 980, y: 110, width: 470 },
-  homelab: { id: 'homelab', title: 'Homelab', x: 260, y: 585, width: 410 },
-  vocal: { id: 'vocal', title: 'Vocal', x: 1010, y: 610, width: 390 },
-  goals: { id: 'goals', title: 'Goals', x: 760, y: 560, width: 370 },
-  memory: { id: 'memory', title: 'Mémoire', x: 760, y: 120, width: 370 },
+const initialLayout: Record<WindowId, Omit<WindowRuntimeState, 'z' | 'minimized' | 'pinned'>> = {
+  conversation: { x: 270, y: 110, width: 430 },
+  dashboard: { x: 980, y: 110, width: 470 },
+  homelab: { x: 260, y: 585, width: 430 },
+  vocal: { x: 1010, y: 610, width: 390 },
+  goals: { x: 760, y: 560, width: 370 },
+  memory: { x: 760, y: 120, width: 370 },
+};
+
+const titles: Record<WindowId, string> = {
+  conversation: 'Conversation',
+  dashboard: 'Système',
+  homelab: 'Homelab',
+  vocal: 'Vocal',
+  goals: 'Goals',
+  memory: 'Mémoire',
 };
 
 const nav = [
@@ -39,35 +50,66 @@ const nav = [
 
 function renderPanel(id: WindowId) {
   switch (id) {
-    case 'dashboard': return <DashboardPanel />;
+    case 'dashboard': return <SystemPanel />;
     case 'homelab': return <HomelabPanel />;
     case 'vocal': return <VocalPanel />;
-    case 'goals': return <GoalsPanel />;
+    case 'goals': return <SelfModelPanel />;
     case 'memory': return <MemoryPanel />;
-    default:
-      return (
-        <div className="conversation-panel">
-          <div className="message user">Néron, ouvre l’état système.</div>
-          <div className="message neron">Fenêtre Système ouverte. Tous les services essentiels sont visibles.</div>
-        </div>
-      );
+    default: return <ConversationPanel />;
   }
+}
+
+function buildInitialWindows(): Record<WindowId, WindowRuntimeState> {
+  const entries = Object.entries(initialLayout) as [WindowId, typeof initialLayout[WindowId]][];
+  return Object.fromEntries(
+    entries.map(([id, layout], index) => [
+      id,
+      { ...layout, minimized: false, pinned: false, z: 10 + index },
+    ]),
+  ) as Record<WindowId, WindowRuntimeState>;
 }
 
 export function NeronConsole() {
   const [openWindows, setOpenWindows] = useState<WindowId[]>(['conversation', 'dashboard', 'homelab', 'vocal']);
+  const [windows, setWindows] = useState<Record<WindowId, WindowRuntimeState>>(buildInitialWindows);
+  const [topZ, setTopZ] = useState(20);
   const [orbState, setOrbState] = useState<OrbState>('idle');
 
-  const visibleWindows = useMemo(() => openWindows.map((id) => windowConfigs[id]), [openWindows]);
+  const visibleWindows = useMemo(
+    () => openWindows.map((id) => ({ id, ...windows[id] })),
+    [openWindows, windows],
+  );
 
   function openWindow(id: WindowId) {
-    setOpenWindows((current) => current.includes(id) ? current : [...current, id]);
+    setOpenWindows((current) => (current.includes(id) ? current : [...current, id]));
+    setWindows((current) => ({ ...current, [id]: { ...current[id], minimized: false } }));
+    bringToFront(id);
     setOrbState('working');
     window.setTimeout(() => setOrbState('idle'), 1400);
   }
 
   function closeWindow(id: WindowId) {
     setOpenWindows((current) => current.filter((windowId) => windowId !== id));
+  }
+
+  function bringToFront(id: WindowId) {
+    setTopZ((z) => {
+      const nextZ = z + 1;
+      setWindows((current) => ({ ...current, [id]: { ...current[id], z: nextZ } }));
+      return nextZ;
+    });
+  }
+
+  function moveWindow(id: WindowId, x: number, y: number) {
+    setWindows((current) => ({ ...current, [id]: { ...current[id], x, y } }));
+  }
+
+  function toggleMinimize(id: WindowId) {
+    setWindows((current) => ({ ...current, [id]: { ...current[id], minimized: !current[id].minimized } }));
+  }
+
+  function togglePin(id: WindowId) {
+    setWindows((current) => ({ ...current, [id]: { ...current[id], pinned: !current[id].pinned } }));
   }
 
   function handleCommand(command: string) {
@@ -85,7 +127,7 @@ export function NeronConsole() {
   return (
     <main className="console-shell">
       <aside className="sidebar">
-        <div className="brand"><div className="brand-orb" /><div><strong>NéronOS</strong><small>Console</small></div></div>
+        <div className="brand"><div className="brand-orb" /><div><strong>NéronWeb</strong><small>Console</small></div></div>
         <button className="nav-home"><Home size={18} /> Accueil</button>
         <nav>
           {nav.map((item) => {
@@ -108,9 +150,23 @@ export function NeronConsole() {
         <NeronOrb state={orbState} />
       </section>
 
-      {visibleWindows.map((window) => (
-        <FloatingWindow key={window.id} {...window} onClose={() => closeWindow(window.id)}>
-          {renderPanel(window.id)}
+      {visibleWindows.map((win) => (
+        <FloatingWindow
+          key={win.id}
+          title={titles[win.id]}
+          x={win.x}
+          y={win.y}
+          width={win.width}
+          zIndex={win.z}
+          minimized={win.minimized}
+          pinned={win.pinned}
+          onClose={() => closeWindow(win.id)}
+          onMinimize={() => toggleMinimize(win.id)}
+          onTogglePin={() => togglePin(win.id)}
+          onFocus={() => bringToFront(win.id)}
+          onMove={(x, y) => moveWindow(win.id, x, y)}
+        >
+          {renderPanel(win.id)}
         </FloatingWindow>
       ))}
 
