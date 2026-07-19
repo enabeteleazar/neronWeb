@@ -1,10 +1,9 @@
 import { Mic, Square } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { type AgentInfo, getStatus, sendAudio } from '../../lib/neronApi';
+import { useCallback, useEffect, useState } from 'react';
+import { type AgentInfo, getStatus } from '../../lib/neronApi';
+import { useNeronVoice } from '../../hooks/useNeronVoice';
 
-type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking' | 'error';
-
-const STATUS_LABEL: Record<VoiceState, string> = {
+const STATUS_LABEL: Record<string, string> = {
   idle: 'Appuyer pour parler',
   listening: 'Enregistrement en cours…',
   processing: 'Néron réfléchit…',
@@ -30,14 +29,9 @@ function statusColor(status: string) {
 }
 
 export function VocalPanel() {
-  const [state, setState] = useState<VoiceState>('idle');
-  const [lastResponse, setLastResponse] = useState<string>('');
+  const { state, transcript, responseText, error, toggle } = useNeronVoice();
   const [agents, setAgents] = useState<Record<string, AgentInfo> | null>(null);
   const [connected, setConnected] = useState<boolean | null>(null);
-
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const streamRef = useRef<MediaStream | null>(null);
 
   const pollAgents = useCallback(() => {
     getStatus()
@@ -57,51 +51,6 @@ export function VocalPanel() {
     return () => window.clearInterval(id);
   }, [pollAgents]);
 
-  async function startRecording() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      chunksRef.current = [];
-      const recorder = new MediaRecorder(stream);
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) chunksRef.current.push(event.data);
-      };
-      recorder.onstop = handleStop;
-      mediaRecorderRef.current = recorder;
-      recorder.start();
-      setState('listening');
-    } catch (err) {
-      console.error('Micro inaccessible :', err);
-      setState('error');
-    }
-  }
-
-  function stopRecording() {
-    mediaRecorderRef.current?.stop();
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-  }
-
-  async function handleStop() {
-    setState('processing');
-    try {
-      const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-      const result = await sendAudio(blob);
-      setLastResponse(result.response ?? result.error ?? 'Pas de réponse.');
-      setState('speaking');
-      window.setTimeout(() => setState('idle'), 2500);
-    } catch (err) {
-      console.error('Erreur audio :', err);
-      setLastResponse(err instanceof Error ? err.message : 'Erreur inconnue');
-      setState('error');
-      window.setTimeout(() => setState('idle'), 2500);
-    }
-  }
-
-  function toggle() {
-    if (state === 'listening') stopRecording();
-    else if (state === 'idle' || state === 'error') startRecording();
-  }
-
   return (
     <div className="vocal-panel">
       <button
@@ -111,8 +60,13 @@ export function VocalPanel() {
       >
         {state === 'listening' ? <Square size={32} /> : <Mic size={42} />}
       </button>
-      <h3>{STATUS_LABEL[state]}</h3>
-      {lastResponse && <p className="vocal-response">{lastResponse}</p>}
+      <h3>{STATUS_LABEL[state] ?? state}</h3>
+      {transcript && (state === 'processing' || state === 'speaking') && (
+        <p className="vocal-transcript">« {transcript} »</p>
+      )}
+      {(error || responseText) && (
+        <p className="vocal-response">{error ?? responseText}</p>
+      )}
 
       <div className="agent-panel">
         <div className="agent-panel-row">
