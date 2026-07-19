@@ -153,3 +153,4 @@ web/neron-app/dist/
 web/neron-app/tsconfig.tsbuildinfo
 dist/
 tsconfig.tsbuildinfo
+node_modules/
