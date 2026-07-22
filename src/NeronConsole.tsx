@@ -48,14 +48,14 @@ const nav = [
   { id: 'memory' as const, label: 'Mémoire', icon: Database },
 ];
 
-function renderPanel(id: WindowId) {
+function renderPanel(id: WindowId, orbState: OrbState, setOrbState: (s: OrbState) => void) {
   switch (id) {
     case 'dashboard': return <SystemPanel />;
     case 'homelab': return <HomelabPanel />;
     case 'vocal': return <VocalPanel />;
     case 'goals': return <SelfModelPanel />;
     case 'memory': return <MemoryPanel />;
-    default: return <ConversationPanel />;
+    default: return <ConversationPanel orbState={orbState} setOrbState={setOrbState} />;
   }
 }
 
@@ -166,7 +166,7 @@ export function NeronConsole() {
           onFocus={() => bringToFront(win.id)}
           onMove={(x, y) => moveWindow(win.id, x, y)}
         >
-          {renderPanel(win.id)}
+          {renderPanel(win.id, orbState, setOrbState)}
         </FloatingWindow>
       ))}
 

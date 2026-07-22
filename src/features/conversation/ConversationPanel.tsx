@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Send } from 'lucide-react';
 import { useNeron } from '../../hooks/useNeron';
+import type { OrbState } from '../../components/NeronOrb';
 
 const STATUS_LABEL: Record<string, string> = {
   connecting: 'Connexion…',
@@ -9,14 +10,20 @@ const STATUS_LABEL: Record<string, string> = {
   error: 'Erreur de connexion',
 };
 
-export function ConversationPanel() {
-  const { messages, status, isStreaming, send, clear } = useNeron();
+export function ConversationPanel({ setOrbState }: { orbState: OrbState; setOrbState: (s: OrbState) => void }) {
+  const { messages, status, isStreaming, isThinking, send, clear } = useNeron();
   const [value, setValue] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    if (isThinking) setOrbState('thinking');
+    else if (isStreaming) setOrbState('working');
+    else setOrbState('idle');
+  }, [isThinking, isStreaming, setOrbState]);
 
   function submit(event: FormEvent) {
     event.preventDefault();
