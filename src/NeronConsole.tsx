@@ -9,7 +9,14 @@ import { MemoryPanel } from './features/memory';
 import { SelfModelPanel } from './features/selfmodel';
 import { SystemPanel } from './features/system';
 import { VocalPanel } from './features/vocal';
-import { getHealth, getServices, type NeronHealth, type ServiceRegistration } from './lib/neronApi';
+import {
+  getHealth,
+  getServices,
+  getSystemResources,
+  type NeronHealth,
+  type ServiceRegistration,
+  type SystemResources,
+} from './lib/neronApi';
 
 type WindowId = 'conversation' | 'dashboard' | 'homelab' | 'vocal' | 'goals' | 'memory';
 
@@ -55,10 +62,21 @@ type SystemProps = {
   services: ServiceRegistration[] | null;
 };
 
-function renderPanel(id: WindowId, orbState: OrbState, setOrbState: (s: OrbState) => void, system: SystemProps) {
+type HomelabProps = {
+  services: ServiceRegistration[] | null;
+  resources: SystemResources | null;
+};
+
+function renderPanel(
+  id: WindowId,
+  orbState: OrbState,
+  setOrbState: (s: OrbState) => void,
+  system: SystemProps,
+  homelab: HomelabProps,
+) {
   switch (id) {
     case 'dashboard': return <SystemPanel {...system} />;
-    case 'homelab': return <HomelabPanel />;
+    case 'homelab': return <HomelabPanel {...homelab} />;
     case 'vocal': return <VocalPanel />;
     case 'goals': return <SelfModelPanel />;
     case 'memory': return <MemoryPanel />;
@@ -85,6 +103,7 @@ export function NeronConsole() {
   const [health, setHealth] = useState<NeronHealth | null>(null);
   const [healthError, setHealthError] = useState(false);
   const [services, setServices] = useState<ServiceRegistration[] | null>(null);
+  const [resources, setResources] = useState<SystemResources | null>(null);
   const prevStatuses = useRef<Record<string, string>>({});
   const openWindowRef = useRef<(id: WindowId) => void>(() => {});
 
@@ -112,6 +131,8 @@ export function NeronConsole() {
       getHealth()
         .then((data) => { if (!cancelled) { setHealth(data); setHealthError(false); } })
         .catch(() => { if (!cancelled) setHealthError(true); });
+
+      getSystemResources().then((data) => { if (!cancelled) setResources(data); });
 
       getServices()
         .then((data) => {
@@ -185,12 +206,13 @@ export function NeronConsole() {
         </nav>
         <div className="sidebar-status">
           <Activity size={18} />
-          <div><small>Aucune notif ..</small></div>
+          <div><strong>Néron</strong><small>En ligne</small></div>
         </div>
       </aside>
 
       <header className="topbar">
         <div className="wordmark">NÉRON</div>
+        <div className="top-actions"><span>Online</span><Settings size={18} /></div>
       </header>
 
       <section className="orb-zone">
@@ -213,11 +235,12 @@ export function NeronConsole() {
           onFocus={() => bringToFront(win.id)}
           onMove={(x, y) => moveWindow(win.id, x, y)}
         >
-          {renderPanel(win.id, orbState, setOrbState, { health, healthError, services })}
+          {renderPanel(win.id, orbState, setOrbState, { health, healthError, services }, { services, resources })}
         </FloatingWindow>
       ))}
 
       <CommandBar onCommand={handleCommand} />
+      <footer className="connection-state">Connecté à Néron Core</footer>
     </main>
   );
 }

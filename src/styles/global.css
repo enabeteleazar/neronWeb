@@ -94,7 +94,7 @@ nav button:hover { background: rgba(255,255,255,.07); color: white; }
 .window-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; color: #a99dff; }
 .window-actions button { border: 0; color: #dce2ff; background: transparent; cursor: pointer; display: grid; place-items: center; padding: 2px; border-radius: 6px; }
 .window-actions button.active { color: #69f5a1; background: rgba(105,245,161,.12); }
-.window-body { padding: 18px; max-height: 70vh; overflow-y: auto; }
+.window-body { padding: 18px; max-height: 90vh; overflow-y: auto; }
 
 /* Conversation */
 .conversation-shell { display: flex; flex-direction: column; gap: 10px; }
@@ -129,7 +129,7 @@ nav button:hover { background: rgba(255,255,255,.07); color: white; }
 .agent-status { color: #8f9ab9; font-size: 12px; }
 
 /* Homelab rack */
-.rack-panel { display: flex; flex-direction: column; gap: 10px; max-height: 360px; overflow-y: auto; }
+.rack-panel { display: flex; flex-direction: column; gap: 10px; }
 .rack-slot { border: 1px solid rgba(255,255,255,.09); border-left: 3px solid; border-radius: 10px; background: rgba(255,255,255,.03); padding: 10px 12px; }
 .rack-slot-header { display: flex; align-items: center; gap: 10px; }
 .rack-unit { font-size: 11px; color: #8f9ab9; background: rgba(255,255,255,.06); border-radius: 6px; padding: 2px 6px; }
