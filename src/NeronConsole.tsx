@@ -105,6 +105,7 @@ export function NeronConsole() {
   const [services, setServices] = useState<ServiceRegistration[] | null>(null);
   const [resources, setResources] = useState<SystemResources | null>(null);
   const prevStatuses = useRef<Record<string, string>>({});
+  const wasResourceAlert = useRef(false);
   const openWindowRef = useRef<(id: WindowId) => void>(() => {});
 
   const visibleWindows = useMemo(
@@ -132,7 +133,13 @@ export function NeronConsole() {
         .then((data) => { if (!cancelled) { setHealth(data); setHealthError(false); } })
         .catch(() => { if (!cancelled) setHealthError(true); });
 
-      getSystemResources().then((data) => { if (!cancelled) setResources(data); });
+      getSystemResources().then((data) => {
+        if (cancelled) return;
+        setResources(data);
+        const isAlert = [data.cpu_pct, data.ram_pct, data.disk_pct].some((v) => v != null && v >= 90);
+        if (isAlert && !wasResourceAlert.current) openWindowRef.current('homelab');
+        wasResourceAlert.current = isAlert;
+      });
 
       getServices()
         .then((data) => {

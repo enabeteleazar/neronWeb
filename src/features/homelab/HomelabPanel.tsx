@@ -6,8 +6,30 @@ type HomelabPanelProps = {
   resources: SystemResources | null;
 };
 
-function pct(value: number | null | undefined): string {
-  return value != null ? `${Math.round(value)}%` : '—';
+function gaugeColor(value: number | null | undefined): string {
+  if (value == null) return '#4b5563';
+  if (value >= 90) return '#f87171';
+  if (value >= 80) return '#fb923c';
+  if (value >= 70) return '#facc15';
+  return '#4ade80';
+}
+
+function Gauge({ label, value }: { label: string; value: number | null | undefined }) {
+  const pctValue = value ?? 0;
+  return (
+    <div className="gauge">
+      <div className="gauge-header">
+        <span>{label}</span>
+        <b>{value != null ? `${Math.round(value)}%` : '—'}</b>
+      </div>
+      <div className="gauge-track">
+        <div
+          className="gauge-fill"
+          style={{ width: `${Math.min(pctValue, 100)}%`, background: gaugeColor(value) }}
+        />
+      </div>
+    </div>
+  );
 }
 
 export function HomelabPanel({ resources }: HomelabPanelProps) {
@@ -35,10 +57,10 @@ export function HomelabPanel({ resources }: HomelabPanelProps) {
               <strong>{slot.label}</strong>
               <span className={`rack-status-dot dot-${slot.status}`} title={slot.status} />
             </div>
-            <div className="rack-metrics">
-              <span>CPU: <b>{pct(resources?.cpu_pct)}</b></span>
-              <span>RAM: <b>{pct(resources?.ram_pct)}</b></span>
-              <span>Disque: <b>{pct(resources?.disk_pct)}</b></span>
+            <div className="rack-gauges">
+              <Gauge label="CPU" value={resources?.cpu_pct} />
+              <Gauge label="RAM" value={resources?.ram_pct} />
+              <Gauge label="Disque" value={resources?.disk_pct} />
             </div>
           </article>
         );

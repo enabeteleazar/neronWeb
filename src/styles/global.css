@@ -188,3 +188,8 @@ nav button:hover { background: rgba(255,255,255,.07); color: white; }
 .service-list b.status-degraded { color: #facc15; }
 .service-list b.status-unhealthy { color: #f87171; }
 .service-list b.status-unknown { color: #9ca3af; }
+
+.rack-gauges { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.gauge-header { display: flex; justify-content: space-between; font-size: 11px; color: #9ca3af; margin-bottom: 3px; }
+.gauge-track { height: 6px; border-radius: 4px; background: rgba(255,255,255,.08); overflow: hidden; }
+.gauge-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
