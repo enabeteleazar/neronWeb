@@ -183,3 +183,8 @@ nav button:hover { background: rgba(255,255,255,.07); color: white; }
   .orb-zone { padding-left: 84px; }
   .floating-window { transform: scale(.82); transform-origin: top left; }
 }
+
+.service-list b.status-healthy { color: #4ade80; }
+.service-list b.status-degraded { color: #facc15; }
+.service-list b.status-unhealthy { color: #f87171; }
+.service-list b.status-unknown { color: #9ca3af; }

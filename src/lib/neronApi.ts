@@ -12,7 +12,7 @@ export async function neronFetch<T>(path: string, options: ApiOptions = {}, base
     headers.set('Content-Type', 'application/json');
   }
   if (auth !== false && API_KEY) {
-    headers.set('X-API-Key', API_KEY);
+    headers.set('Authorization', `Bearer ${API_KEY}`);
   }
 
   const controller = new AbortController();
@@ -97,6 +97,20 @@ export async function getHealth() {
 
 export async function getStatus() {
   return neronFetch<NeronStatus>('/status', { timeoutMs: 5000 });
+}
+
+export type ServiceRegistration = {
+  service_name: string;
+  host: string;
+  port: number;
+  version?: string;
+  status: 'healthy' | 'degraded' | 'unhealthy' | 'unknown';
+  capabilities?: string[];
+  metadata?: Record<string, unknown>;
+};
+
+export async function getServices() {
+  return neronFetch<{ services: ServiceRegistration[]; count: number }>('/registry/services', { timeoutMs: 5000 });
 }
 
 export async function sendGoal(goal: string) {
