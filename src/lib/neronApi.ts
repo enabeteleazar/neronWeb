@@ -50,8 +50,15 @@ export type AgentInfo = {
   [key: string]: unknown;
 };
 
+export type NeronResources = {
+  cpu_pct?: number;
+  ram_pct?: number;
+  disk_pct?: number;
+};
+
 export type NeronStatus = {
   agents?: Record<string, AgentInfo>;
+  resources?: NeronResources;
   [key: string]: unknown;
 };
 

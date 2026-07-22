@@ -1,13 +1,6 @@
 import { useEffect, useState } from 'react';
 import { type AgentInfo, getHealth, getStatus, type NeronHealth } from '../../lib/neronApi';
 
-const metrics = [
-  ['CPU', '16%', 'normal'],
-  ['RAM', '32%', 'stable'],
-  ['Disque', '28%', 'OK'],
-  ['Réseau', '23%', 'actif'],
-] as const;
-
 export function DashboardPanel() {
   const [health, setHealth] = useState<NeronHealth | null>(null);
   const [healthError, setHealthError] = useState(false);
@@ -40,12 +33,6 @@ export function DashboardPanel() {
           {health?.version && <small>Version {health.version}</small>}
         </div>
       </div>
-
-      {metrics.map(([label, value, status]) => (
-        <div className="metric-card" key={label}>
-          <span>{label}</span><strong>{value}</strong><small>{status}</small>
-        </div>
-      ))}
 
       <div className="service-list">
         <h3>Services</h3>
