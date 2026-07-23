@@ -15,19 +15,34 @@ function gaugeColor(value: number | null | undefined): string {
 }
 
 function Gauge({ label, value }: { label: string; value: number | null | undefined }) {
-  const pctValue = value ?? 0;
+  const radius = 42;
+  const circumference = Math.PI * radius;
+  const pctValue = Math.min(value ?? 0, 100);
+  const dashOffset = circumference - (pctValue / 100) * circumference;
+
   return (
     <div className="gauge">
-      <div className="gauge-header">
-        <span>{label}</span>
-        <b>{value != null ? `${Math.round(value)}%` : '—'}</b>
-      </div>
-      <div className="gauge-track">
-        <div
-          className="gauge-fill"
-          style={{ width: `${Math.min(pctValue, 100)}%`, background: gaugeColor(value) }}
+      <svg viewBox="0 0 100 56" className="gauge-svg">
+        <path
+          d="M8,50 A42,42 0 0,1 92,50"
+          fill="none"
+          stroke="rgba(255,255,255,.08)"
+          strokeWidth="9"
+          strokeLinecap="round"
         />
-      </div>
+        <path
+          d="M8,50 A42,42 0 0,1 92,50"
+          fill="none"
+          stroke={gaugeColor(value)}
+          strokeWidth="9"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={dashOffset}
+          style={{ transition: 'stroke-dashoffset .5s ease, stroke .5s ease' }}
+        />
+      </svg>
+      <div className="gauge-value">{value != null ? `${Math.round(value)}%` : '—'}</div>
+      <div className="gauge-label">{label}</div>
     </div>
   );
 }
@@ -55,12 +70,12 @@ export function HomelabPanel({ resources }: HomelabPanelProps) {
             <div className="rack-slot-header">
               <span className="rack-unit">{unitId}</span>
               <strong>{slot.label}</strong>
+              <div className="rack-gauges-row">
+                <Gauge label="CPU" value={resources?.cpu_pct} />
+                <Gauge label="RAM" value={resources?.ram_pct} />
+                <Gauge label="Disque" value={resources?.disk_pct} />
+              </div>
               <span className={`rack-status-dot dot-${slot.status}`} title={slot.status} />
-            </div>
-            <div className="rack-gauges">
-              <Gauge label="CPU" value={resources?.cpu_pct} />
-              <Gauge label="RAM" value={resources?.ram_pct} />
-              <Gauge label="Disque" value={resources?.disk_pct} />
             </div>
           </article>
         );

@@ -193,3 +193,9 @@ nav button:hover { background: rgba(255,255,255,.07); color: white; }
 .gauge-header { display: flex; justify-content: space-between; font-size: 11px; color: #9ca3af; margin-bottom: 3px; }
 .gauge-track { height: 6px; border-radius: 4px; background: rgba(255,255,255,.08); overflow: hidden; }
 .gauge-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
+
+.rack-gauges-row { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.gauge { display: flex; flex-direction: column; align-items: center; width: 28px; }
+.gauge-svg { width: 100%; }
+.gauge-value { font-size: 8px; font-weight: 700; color: #f4f6ff; margin-top: -5px; }
+.gauge-label { font-size: 6px; color: #9ca3af; text-transform: uppercase; letter-spacing: .03em; }

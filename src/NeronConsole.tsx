@@ -160,7 +160,7 @@ export function NeronConsole() {
     }
 
     poll();
-    const id = window.setInterval(poll, 8000);
+    const id = window.setInterval(poll, 2000);
     return () => { cancelled = true; window.clearInterval(id); };
   }, []);
 
