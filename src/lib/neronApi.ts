@@ -125,13 +125,14 @@ export async function getSystemResources(): Promise<SystemResources> {
   try {
     const headers = new Headers();
     if (API_KEY) headers.set('Authorization', `Bearer ${API_KEY}`);
-    const response = await fetch(`${API_URL}/metrics`, { headers });
+    const response = await fetch(`${API_URL}/self-model`, { headers });
     if (!response.ok) return empty;
-    const text = await response.text();
+    const data = await response.json();
+    const runtime = data?.runtime ?? {};
     return {
-      cpu_pct: extractGauge(text, 'neron_system_cpu_percent'),
-      ram_pct: extractGauge(text, 'neron_system_ram_percent'),
-      disk_pct: extractGauge(text, 'neron_system_disk_percent'),
+      cpu_pct: runtime.cpu_usage ?? null,
+      ram_pct: runtime.ram_usage ?? null,
+      disk_pct: runtime.disk_usage ?? null,
     };
   } catch {
     return empty;
